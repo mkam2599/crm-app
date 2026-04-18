@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CRM — Lead Pipeline</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f1f5f9;--card:#fff;--border:#e2e8f0;
+  --text:#1e293b;--muted:#64748b;--faint:#94a3b8;
+  --primary:#6366f1;--primary-d:#4f46e5;
+  --green:#10b981;--red:#ef4444;--amber:#f59e0b;--blue:#3b82f6;--cyan:#06b6d4;--purple:#8b5cf6;
+  --sidebar:#1e293b;--sidebar-hover:#334155;--sidebar-active:#6366f1;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+
+/* ── SIDEBAR ── */
+.sidebar{width:230px;background:var(--sidebar);color:#fff;display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.sidebar-logo{padding:22px 20px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #334155}
+.sidebar-logo .icon{width:34px;height:34px;background:var(--primary);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.sidebar-logo .brand{font-size:16px;font-weight:800;letter-spacing:-.3px}
+.sidebar-logo .sub{font-size:11px;color:#94a3b8;margin-top:1px}
+.nav-section{padding:16px 12px 8px;font-size:10.5px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.07em}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:9px;cursor:pointer;font-size:13.5px;font-weight:500;color:#94a3b8;margin:1px 8px;transition:all .15s}
+.nav-item:hover{background:var(--sidebar-hover);color:#fff}
+.nav-item.active{background:var(--primary);color:#fff;font-weight:700}
+.nav-item .ni{font-size:16px;width:20px;text-align:center}
+.sidebar-footer{margin-top:auto;padding:14px 12px;border-top:1px solid #334155}
+.sidebar-footer .nav-item{margin:0}
+
+/* ── MAIN ── */
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.topbar{background:var(--card);border-bottom:1px solid var(--border);padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:sticky;top:0;z-index:50}
+.topbar h2{font-size:17px;font-weight:800}
+.topbar-actions{display:flex;gap:10px;align-items:center}
+.page{padding:24px 28px;flex:1}
+
+/* ── CARDS / GRID ── */
+.card{background:var(--card);border-radius:16px;box-shadow:0 1px 3px rgba(0,0,0,.07),0 0 1px rgba(0,0,0,.04);padding:22px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px}
+.grid-3-2{display:grid;grid-template-columns:3fr 2fr;gap:16px;margin-bottom:20px}
+
+/* ── STAT CARDS ── */
+.stat{background:var(--card);border-radius:16px;padding:20px 22px;box-shadow:0 1px 3px rgba(0,0,0,.07);border-top:4px solid}
+.stat .sl{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+.stat .sv{font-size:28px;font-weight:900;line-height:1}
+.stat .ss{font-size:12px;color:var(--faint);margin-top:5px}
+
+/* ── BUTTONS ── */
+.btn{cursor:pointer;border:none;border-radius:9px;font-weight:700;font-size:13px;padding:9px 18px;transition:all .15s;display:inline-flex;align-items:center;gap:7px}
+.btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-d)}
+.btn-ghost{background:#f1f5f9;color:var(--muted)}.btn-ghost:hover{background:#e2e8f0;color:var(--text)}
+.btn-danger{background:#fee2e2;color:var(--red)}.btn-danger:hover{background:#fecaca}
+.btn-green{background:#dcfce7;color:#15803d}.btn-green:hover{background:#bbf7d0}
+.btn-sm{padding:6px 13px;font-size:12px}
+.btn-icon{padding:8px;border-radius:8px;background:#f1f5f9;border:none;cursor:pointer;color:var(--muted);font-size:14px;transition:all .15s}.btn-icon:hover{background:#e2e8f0;color:var(--text)}
+
+/* ── FORMS ── */
+.form-input{width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:9px;font-size:13.5px;outline:none;font-family:inherit;transition:border-color .18s;background:#fff;color:var(--text)}
+.form-input:focus{border-color:var(--primary)}
+textarea.form-input{resize:vertical}
+.form-label{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px}
+.form-group{margin-bottom:14px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+select.form-input{cursor:pointer}
+
+/* ── MODAL ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s}
+.overlay.open{opacity:1;pointer-events:all}
+.modal{background:#fff;border-radius:20px;padding:30px;width:100%;max-width:580px;max-height:92vh;overflow-y:auto;box-shadow:0 24px 70px rgba(0,0,0,.22);transform:translateY(18px);transition:transform .2s}
+.overlay.open .modal{transform:translateY(0)}
+.modal-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.modal-hd h3{font-size:18px;font-weight:800}
+.modal-ft{display:flex;gap:10px;margin-top:22px;justify-content:flex-end}
+
+/* ── TAGS / BADGES ── */
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:100px;font-size:11.5px;font-weight:700}
+.stage-badge{font-size:12px;font-weight:700;padding:4px 12px;border-radius:100px}
+
+/* ── SEARCH / INPUT ROW ── */
+.search-bar{display:flex;gap:10px;margin-bottom:18px;align-items:center}
+.search-input{padding:9px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:13.5px;outline:none;font-family:inherit;transition:border-color .18s;background:#fff;width:260px}
+.search-input:focus{border-color:var(--primary)}
+
+/* ── KANBAN ── */
+.kanban{display:flex;gap:14px;overflow-x:auto;padding-bottom:12px;min-height:0;flex:1}
+.k-col{background:#f8fafc;border-radius:14px;width:220px;flex-shrink:0;display:flex;flex-direction:column;max-height:100%;border:1.5px solid var(--border)}
+.k-col.drag-over{border-color:var(--primary);background:#f0f0ff}
+.k-header{padding:13px 14px 10px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.k-title{font-size:13px;font-weight:700;display:flex;align-items:center;gap:7px}
+.k-count{background:#e2e8f0;color:var(--muted);font-size:11px;font-weight:700;padding:2px 7px;border-radius:100px}
+.k-value{font-size:11px;color:var(--faint);margin-top:2px;padding:0 14px 8px}
+.k-body{overflow-y:auto;padding:0 10px 10px;flex:1;display:flex;flex-direction:column;gap:8px}
+.lead-card{background:#fff;border-radius:11px;padding:13px;cursor:pointer;border:1.5px solid transparent;transition:all .15s;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.lead-card:hover{border-color:var(--primary);box-shadow:0 4px 12px rgba(99,102,241,.15)}
+.lead-card.dragging{opacity:.5;transform:rotate(2deg)}
+.lc-name{font-size:13.5px;font-weight:700;margin-bottom:3px}
+.lc-company{font-size:12px;color:var(--muted);margin-bottom:8px}
+.lc-footer{display:flex;justify-content:space-between;align-items:center}
+.lc-value{font-size:12px;font-weight:700;color:var(--primary)}
+.lc-source{font-size:11px;color:var(--faint);background:#f1f5f9;padding:2px 7px;border-radius:5px}
+
+/* ── LEAD TABLE ── */
+.table-wrap{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+table{width:100%;border-collapse:collapse}
+th{background:#f8fafc;padding:12px 16px;text-align:left;font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;cursor:pointer;user-select:none}
+th:hover{color:var(--text)}
+td{padding:13px 16px;border-bottom:1px solid #f1f5f9;font-size:13.5px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafbff;cursor:pointer}
+
+/* ── LEAD PANEL ── */
+.lead-panel{position:fixed;top:0;right:0;width:480px;height:100vh;background:#fff;box-shadow:-8px 0 40px rgba(0,0,0,.12);z-index:150;transform:translateX(100%);transition:transform .25s;display:flex;flex-direction:column;overflow:hidden}
+.lead-panel.open{transform:translateX(0)}
+.lp-header{padding:22px 24px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.lp-name{font-size:20px;font-weight:800;margin-bottom:4px}
+.lp-meta{font-size:13.5px;color:var(--muted)}
+.lp-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.lp-tabs{display:flex;border-bottom:1px solid var(--border);padding:0 24px;flex-shrink:0}
+.lp-tab{padding:12px 16px;font-size:13px;font-weight:600;color:var(--faint);cursor:pointer;border-bottom:2.5px solid transparent;transition:all .15s;white-space:nowrap}
+.lp-tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+.lp-body{flex:1;overflow-y:auto;padding:20px 24px}
+
+/* ── TIMELINE ── */
+.timeline{display:flex;flex-direction:column;gap:0}
+.tl-item{display:flex;gap:14px;padding-bottom:20px;position:relative}
+.tl-item:not(:last-child):before{content:'';position:absolute;left:15px;top:32px;bottom:0;width:1.5px;background:var(--border)}
+.tl-icon{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;z-index:1}
+.tl-content{flex:1;padding-top:4px}
+.tl-title{font-size:13.5px;font-weight:600;margin-bottom:3px}
+.tl-body{font-size:12.5px;color:var(--muted);line-height:1.5}
+.tl-time{font-size:11px;color:var(--faint);margin-top:4px}
+
+/* ── ANALYTICS ── */
+.chart-wrap{position:relative;width:100%}
+.funnel-bar{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.funnel-label{width:130px;font-size:12.5px;font-weight:600;color:var(--text);flex-shrink:0;text-align:right}
+.funnel-track{flex:1;background:#f1f5f9;border-radius:6px;height:28px;overflow:hidden}
+.funnel-fill{height:100%;border-radius:6px;display:flex;align-items:center;padding:0 10px;font-size:12px;font-weight:700;color:#fff;transition:width .6s ease}
+.funnel-n{font-size:12px;color:var(--muted);width:40px;text-align:right}
+
+/* ── TEMPLATES ── */
+.template-card{background:#fff;border-radius:14px;padding:18px 20px;border:1.5px solid var(--border);margin-bottom:12px;transition:border-color .15s}
+.template-card:hover{border-color:var(--primary)}
+.tc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.tc-name{font-size:15px;font-weight:700}
+.tc-subject{font-size:13px;color:var(--muted);margin-bottom:8px}
+.tc-preview{font-size:12.5px;color:var(--faint);line-height:1.5;white-space:pre-line}
+.tc-meta{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
+
+/* ── MISC ── */
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+.empty{text-align:center;padding:50px 20px;color:var(--faint)}
+.empty .ei{font-size:44px;margin-bottom:10px}
+.empty p{font-size:14px}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:100px;font-size:12px;font-weight:600}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);background:#1e293b;color:#fff;padding:12px 22px;border-radius:12px;font-size:14px;font-weight:600;z-index:999;transition:transform .25s;pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ── PIPELINE WRAPPER ── */
+.pipeline-page{display:flex;flex-direction:column;height:calc(100vh - 58px);overflow:hidden;padding:20px 28px}
+.pipeline-toolbar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-shrink:0}
+.kanban-wrap{flex:1;overflow-x:auto;overflow-y:hidden;display:flex;gap:14px;padding-bottom:8px}
+
+/* ── STAGE COLORS ── */
+.s-new{color:#64748b;background:#f1f5f9}
+.s-contacted{color:#7c3aed;background:#ede9fe}
+.s-qualified{color:#b45309;background:#fef3c7}
+.s-proposal{color:#1d4ed8;background:#dbeafe}
+.s-negotiation{color:#0e7490;background:#cffafe}
+.s-won{color:#15803d;background:#dcfce7}
+.s-lost{color:#b91c1c;background:#fee2e2}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="icon">🎯</div>
+    <div>
+      <div class="brand">CRM Pro</div>
+      <div class="sub">Lead Pipeline</div>
+    </div>
+  </div>
+  <div class="nav-section">Main</div>
+  <div class="nav-item active" onclick="nav('dashboard')" id="nav-dashboard"><span class="ni">📊</span> Dashboard</div>
+  <div class="nav-item" onclick="nav('pipeline')" id="nav-pipeline"><span class="ni">🗂️</span> Pipeline</div>
+  <div class="nav-item" onclick="nav('leads')" id="nav-leads"><span class="ni">👥</span> All Leads</div>
+  <div class="nav-section">Automation</div>
+  <div class="nav-item" onclick="nav('templates')" id="nav-templates"><span class="ni">✉️</span> Email Templates</div>
+  <div class="nav-section">Reports</div>
+  <div class="nav-item" onclick="nav('analytics')" id="nav-analytics"><span class="ni">📈</span> Analytics</div>
+  <div class="sidebar-footer">
+    <div class="nav-item" onclick="nav('settings')" id="nav-settings"><span class="ni">⚙️</span> Settings</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main" id="main-content">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <h2 id="page-title">Dashboard</h2>
+    <div class="topbar-actions" id="topbar-actions"></div>
+  </div>
+
+  <!-- PAGES -->
+  <div id="page-dashboard" class="page" style="display:none"></div>
+  <div id="page-pipeline" style="display:none"></div>
+  <div id="page-leads" class="page" style="display:none"></div>
+  <div id="page-templates" class="page" style="display:none"></div>
+  <div id="page-analytics" class="page" style="display:none"></div>
+  <div id="page-settings" class="page" style="display:none"></div>
+</div>
+
+<!-- LEAD DETAIL PANEL -->
+<div class="lead-panel" id="lead-panel">
+  <div class="lp-header">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div>
+        <div class="lp-name" id="lp-name">—</div>
+        <div class="lp-meta" id="lp-meta">—</div>
+      </div>
+      <button class="btn-icon" onclick="closePanel()">✕</button>
+    </div>
+    <div class="lp-actions" id="lp-actions"></div>
+  </div>
+  <div class="lp-tabs">
+    <div class="lp-tab active" onclick="lpTab('info',this)">Info</div>
+    <div class="lp-tab" onclick="lpTab('activity',this)">Activity</div>
+    <div class="lp-tab" onclick="lpTab('emails',this)">Emails</div>
+  </div>
+  <div class="lp-body" id="lp-body"></div>
+</div>
+
+<!-- OVERLAY for lead panel backdrop -->
+<div id="panel-overlay" onclick="closePanel()" style="position:fixed;inset:0;background:rgba(0,0,0,.2);z-index:149;display:none"></div>
+
+<!-- ADD/EDIT LEAD MODAL -->
+<div class="overlay" id="lead-modal">
+  <div class="modal">
+    <div class="modal-hd">
+      <h3 id="lead-modal-title">Add Lead</h3>
+      <button class="btn-ghost btn-sm" onclick="closeLeadModal()">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Full Name *</label><input class="form-input" id="lm-name" placeholder="Jane Smith"/></div>
+      <div class="form-group"><label class="form-label">Company</label><input class="form-input" id="lm-company" placeholder="Acme Corp"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="lm-email" type="email" placeholder="jane@acme.com"/></div>
+      <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="lm-phone" placeholder="+1-555-0100"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Source</label>
+        <select class="form-input" id="lm-source">
+          <option>Manual</option><option>Website</option><option>LinkedIn</option><option>Referral</option>
+          <option>Cold Outreach</option><option>Conference</option><option>Google Ads</option><option>Other</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Stage</label>
+        <select class="form-input" id="lm-stage">
+          <option>New Lead</option><option>Contacted</option><option>Qualified</option>
+          <option>Proposal Sent</option><option>Negotiation</option><option>Closed Won</option><option>Closed Lost</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Deal Value ($)</label><input class="form-input" id="lm-value" type="number" min="0" placeholder="0"/></div>
+      <div class="form-group"><label class="form-label">Assigned To</label><input class="form-input" id="lm-assigned" placeholder="Team member name"/></div>
+    </div>
+    <div class="form-group"><label class="form-label">Notes</label><textarea class="form-input" id="lm-notes" rows="3" placeholder="Key details, context, next steps…"></textarea></div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="closeLeadModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveLead()">Save Lead</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOG ACTIVITY MODAL -->
+<div class="overlay" id="activity-modal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-hd">
+      <h3>Log Activity</h3>
+      <button class="btn-ghost btn-sm" onclick="closeActivityModal()">✕</button>
+    </div>
+    <input type="hidden" id="am-lead-id"/>
+    <div class="form-group"><label class="form-label">Type</label>
+      <select class="form-input" id="am-type">
+        <option value="call">📞 Call</option>
+        <option value="email">✉️ Email</option>
+        <option value="meeting">🤝 Meeting</option>
+        <option value="note">📝 Note</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Title</label><input class="form-input" id="am-title" placeholder="Quick summary…"/></div>
+    <div class="form-group"><label class="form-label">Details / Notes</label><textarea class="form-input" id="am-content" rows="3" placeholder="What happened? Next steps?"></textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Duration (min)</label><input class="form-input" id="am-duration" type="number" min="1" placeholder="15"/></div>
+      <div class="form-group"><label class="form-label">Date / Time</label><input class="form-input" id="am-date" type="datetime-local"/></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="closeActivityModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveActivity()">Log Activity</button>
+    </div>
+  </div>
+</div>
+
+<!-- SEND EMAIL MODAL -->
+<div class="overlay" id="email-modal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-hd">
+      <h3>Send Email</h3>
+      <button class="btn-ghost btn-sm" onclick="closeEmailModal()">✕</button>
+    </div>
+    <input type="hidden" id="em-lead-id"/>
+    <div class="form-group">
+      <label class="form-label">Use Template</label>
+      <select class="form-input" id="em-template" onchange="applyEmailTemplate()">
+        <option value="">— Choose a template (optional) —</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Subject</label><input class="form-input" id="em-subject" placeholder="Email subject…"/></div>
+    <div class="form-group"><label class="form-label">Body</label><textarea class="form-input" id="em-body" rows="8" placeholder="Your message…\n\nUse {{name}}, {{company}}, {{sender}} for personalisation."></textarea></div>
+    <div class="form-group"><label class="form-label">Schedule Send (optional)</label><input class="form-input" id="em-scheduled" type="datetime-local"/></div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="closeEmailModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="sendEmailNow()">Send Email</button>
+    </div>
+  </div>
+</div>
+
+<!-- TEMPLATE MODAL -->
+<div class="overlay" id="template-modal">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-hd">
+      <h3 id="tmpl-modal-title">New Template</h3>
+      <button class="btn-ghost btn-sm" onclick="closeTmplModal()">✕</button>
+    </div>
+    <input type="hidden" id="tm-id"/>
+    <div class="form-group"><label class="form-label">Template Name</label><input class="form-input" id="tm-name" placeholder="e.g. Follow-up #1"/></div>
+    <div class="form-group"><label class="form-label">Subject</label><input class="form-input" id="tm-subject" placeholder="e.g. Quick question about {{company}}"/></div>
+    <div class="form-group"><label class="form-label">Body</label><textarea class="form-input" id="tm-body" rows="8" placeholder="Use {{name}}, {{company}}, {{sender}}, {{stage}} for personalisation…"></textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Auto-send when stage =</label>
+        <select class="form-input" id="tm-trigger">
+          <option value="">No auto-send</option>
+          <option>New Lead</option><option>Contacted</option><option>Qualified</option>
+          <option>Proposal Sent</option><option>Negotiation</option><option>Closed Won</option><option>Closed Lost</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Delay (hours after trigger)</label><input class="form-input" id="tm-delay" type="number" min="0" value="0"/></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="closeTmplModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTemplate()">Save Template</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── STATE ────────────────────────────────────────────────────────────
+let currentView = 'dashboard';
+let leads = [], templates = [], analytics = {};
+let selectedLeadId = null;
+let lpCurrentTab = 'info';
+let charts = {};
+let editLeadId = null;
+let sortField = 'updated_at', sortDir = -1;
+
+// ─── STAGE CONFIG ─────────────────────────────────────────────────────
+const STAGES = ['New Lead','Contacted','Qualified','Proposal Sent','Negotiation','Closed Won','Closed Lost'];
+const STAGE_COLORS = {'New Lead':'#64748b','Contacted':'#7c3aed','Qualified':'#b45309','Proposal Sent':'#1d4ed8','Negotiation':'#0e7490','Closed Won':'#15803d','Closed Lost':'#b91c1c'};
+const STAGE_BG = {'New Lead':'#f1f5f9','Contacted':'#ede9fe','Qualified':'#fef3c7','Proposal Sent':'#dbeafe','Negotiation':'#cffafe','Closed Won':'#dcfce7','Closed Lost':'#fee2e2'};
+const TYPE_ICONS = {call:'📞',email:'✉️',meeting:'🤝',note:'📝',stage_change:'🔄'};
+const TYPE_COLORS = {call:'#3b82f6',email:'#8b5cf6',meeting:'#10b981',note:'#f59e0b',stage_change:'#6366f1'};
+
+// ─── API ──────────────────────────────────────────────────────────────
+async function api(method, path, body) {
+  try {
+    const r = await fetch('/api' + path, {
+      method,
+      headers: body ? {'Content-Type':'application/json'} : {},
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    return r.json();
+  } catch(e) { toast('Network error: ' + e.message, true); return null; }
+}
+
+// ─── TOAST ────────────────────────────────────────────────────────────
+function toast(msg, err=false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.background = err ? '#ef4444' : '#1e293b';
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ─── NAV ──────────────────────────────────────────────────────────────
+async function nav(view) {
+  currentView = view;
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('nav-' + view)?.classList.add('active');
+  document.querySelectorAll('[id^="page-"]').forEach(p => p.style.display='none');
+  const pg = document.getElementById('page-' + view);
+  pg.style.display = view === 'pipeline' ? 'block' : 'block';
+  const titles = {dashboard:'Dashboard',pipeline:'Pipeline',leads:'All Leads',templates:'Email Templates',analytics:'Analytics',settings:'Settings'};
+  document.getElementById('page-title').textContent = titles[view] || view;
+  document.getElementById('topbar-actions').innerHTML = '';
+  closePanel();
+
+  if (view === 'dashboard')   await renderDashboard();
+  if (view === 'pipeline')    await renderPipeline();
+  if (view === 'leads')       await renderLeads();
+  if (view === 'templates')   await renderTemplates();
+  if (view === 'analytics')   await renderAnalytics();
+  if (view === 'settings')    renderSettings();
+}
+
+// ─── HELPERS ──────────────────────────────────────────────────────────
+function fmtMoney(n) { return n >= 1000 ? '$' + (n/1000).toFixed(0) + 'k' : '$' + Number(n).toLocaleString(); }
+function fmtDate(s) { if (!s) return '—'; return new Date(s).toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'}); }
+function fmtDateTime(s) { if(!s) return '—'; return new Date(s).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }
+function stageBadge(s) { return `<span class="stage-badge" style="color:${STAGE_COLORS[s]||'#64748b'};background:${STAGE_BG[s]||'#f1f5f9'}">${s}</span>`; }
+function initials(name) { return (name||'?').split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase(); }
+function destroyChart(id) { if(charts[id]){charts[id].destroy();delete charts[id];} }
+
+// ─── DASHBOARD ────────────────────────────────────────────────────────
+async function renderDashboard() {
+  const [ov, pipeline, sources, trend] = await Promise.all([
+    api('GET','/analytics/overview'),
+    api('GET','/analytics/pipeline'),
+    api('GET','/analytics/sources'),
+    api('GET','/analytics/trend'),
+  ]);
+  leads = await api('GET','/leads');
+  const pg = document.getElementById('page-dashboard');
+  document.getElementById('topbar-actions').innerHTML = `<button class="btn btn-primary" onclick="openLeadModal()">+ Add Lead</button>`;
+
+  pg.innerHTML = `
+    <div class="grid-4">
+      <div class="stat" style="border-color:#6366f1">
+        <div class="sl">Active Pipeline</div>
+        <div class="sv">${fmtMoney(ov.pipeline||0)}</div>
+        <div class="ss">${ov.active||0} active leads</div>
+      </div>
+      <div class="stat" style="border-color:#10b981">
+        <div class="sl">Closed Won</div>
+        <div class="sv">${fmtMoney(ov.wonRevenue||0)}</div>
+        <div class="ss">${ov.wonCount||0} deals closed</div>
+      </div>
+      <div class="stat" style="border-color:#f59e0b">
+        <div class="sl">Win Rate</div>
+        <div class="sv">${ov.winRate||0}%</div>
+        <div class="ss">${(ov.wonCount||0)+(ov.lost||0)} total closed</div>
+      </div>
+      <div class="stat" style="border-color:#3b82f6">
+        <div class="sl">Total Leads</div>
+        <div class="sv">${ov.total||0}</div>
+        <div class="ss">${ov.emails||0} emails sent · ${ov.calls||0} calls</div>
+      </div>
+    </div>
+    <div class="grid-3-2">
+      <div class="card">
+        <h3 style="font-size:14px;font-weight:700;margin-bottom:16px">Pipeline by Stage</h3>
+        <div id="funnel-chart"></div>
+      </div>
+      <div class="card">
+        <h3 style="font-size:14px;font-weight:700;margin-bottom:16px">Lead Sources</h3>
+        <div class="chart-wrap" style="height:200px"><canvas id="ch-sources"></canvas></div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3 style="font-size:14px;font-weight:700;margin-bottom:16px">Monthly New Leads</h3>
+        <div class="chart-wrap" style="height:180px"><canvas id="ch-trend"></canvas></div>
+      </div>
+      <div class="card">
+        <h3 style="font-size:14px;font-weight:700;margin-bottom:14px">Recent Activity</h3>
+        <div id="recent-leads"></div>
+      </div>
+    </div>
+  `;
+
+  // Funnel
+  const maxCount = Math.max(...pipeline.map(p=>p.count),1);
+  document.getElementById('funnel-chart').innerHTML = pipeline.map(p => `
+    <div class="funnel-bar">
+      <div class="funnel-label">${p.stage}</div>
+      <div class="funnel-track">
+        <div class="funnel-fill" style="width:${Math.max((p.count/maxCount)*100,0)}%;background:${STAGE_COLORS[p.stage]||'#94a3b8'}">
+          ${p.count > 0 ? fmtMoney(p.value) : ''}
+        </div>
+      </div>
+      <div class="funnel-n">${p.count}</div>
+    </div>`).join('');
+
+  // Sources doughnut
+  destroyChart('sources');
+  if (sources?.length) {
+    charts['sources'] = new Chart(document.getElementById('ch-sources'), {
+      type:'doughnut',
+      data:{
+        labels: sources.map(s=>s.source),
+        datasets:[{data:sources.map(s=>s.count),backgroundColor:['#6366f1','#10b981','#f59e0b','#3b82f6','#ef4444','#8b5cf6','#06b6d4'],borderWidth:2,borderColor:'#fff'}]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{boxWidth:11,font:{size:11}}}}}
+    });
+  }
+
+  // Trend line
+  destroyChart('trend');
+  if (trend?.length) {
+    charts['trend'] = new Chart(document.getElementById('ch-trend'), {
+      type:'bar',
+      data:{
+        labels:trend.map(t=>t.month),
+        datasets:[{label:'New Leads',data:trend.map(t=>t.leads),backgroundColor:'rgba(99,102,241,.7)',borderRadius:6}]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{grid:{color:'#f1f5f9'},ticks:{font:{size:10}}}}}
+    });
+  }
+
+  // Recent leads
+  const recent = [...leads].slice(0,6);
+  document.getElementById('recent-leads').innerHTML = recent.length ? recent.map(l => `
+    <div onclick="openPanel('${l.id}')" style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #f1f5f9;cursor:pointer">
+      <div class="avatar" style="background:${STAGE_COLORS[l.stage]||'#6366f1'}">${initials(l.name)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${l.name}</div>
+        <div style="font-size:12px;color:var(--muted)">${l.company||'—'}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        ${stageBadge(l.stage)}
+        <div style="font-size:11.5px;color:var(--muted);margin-top:3px">${fmtMoney(l.value)}</div>
+      </div>
+    </div>`).join('') : '<div class="empty"><p>No leads yet</p></div>';
+}
+
+// ─── PIPELINE (KANBAN) ────────────────────────────────────────────────
+async function renderPipeline() {
+  leads = await api('GET','/leads');
+  const pg = document.getElementById('page-pipeline');
+  document.getElementById('topbar-actions').innerHTML = `<button class="btn btn-primary" onclick="openLeadModal()">+ Add Lead</button>`;
+  pg.innerHTML = `
+    <div class="pipeline-page">
+      <div class="pipeline-toolbar">
+        <input class="search-input" id="k-search" placeholder="🔍 Search leads…" oninput="filterKanban()" style="width:220px"/>
+        <select class="form-input" id="k-source" onchange="filterKanban()" style="width:160px">
+          <option value="">All Sources</option>
+          ${[...new Set(leads.map(l=>l.source))].map(s=>`<option>${s}</option>`).join('')}
+        </select>
+      </div>
+      <div class="kanban-wrap" id="kanban-board"></div>
+    </div>`;
+  renderKanban(leads);
+}
+
+function renderKanban(data) {
+  const board = document.getElementById('kanban-board');
+  if (!board) return;
+  board.innerHTML = STAGES.map(stage => {
+    const stageleads = data.filter(l => l.stage === stage);
+    const total = stageleads.reduce((s,l)=>s+l.value,0);
+    return `
+      <div class="k-col" id="kcol-${stage.replace(/\s/g,'-')}" data-stage="${stage}"
+           ondragover="kDragOver(event,this)" ondragleave="kDragLeave(this)" ondrop="kDrop(event,this)">
+        <div class="k-header">
+          <div>
+            <div class="k-title">
+              <span style="width:10px;height:10px;border-radius:50%;background:${STAGE_COLORS[stage]};display:inline-block"></span>
+              ${stage}
+            </div>
+          </div>
+          <span class="k-count">${stageleads.length}</span>
+        </div>
+        <div class="k-value">${total>0?fmtMoney(total):''}</div>
+        <div class="k-body" id="kb-${stage.replace(/\s/g,'-')}">
+          ${stageleads.map(l => `
+            <div class="lead-card" draggable="true" data-id="${l.id}"
+                 ondragstart="kDragStart(event,this)"
+                 ondragend="kDragEnd(this)"
+                 onclick="openPanel('${l.id}')">
+              <div class="lc-name">${l.name}</div>
+              <div class="lc-company">${l.company||'—'}</div>
+              <div class="lc-footer">
+                <div class="lc-value">${fmtMoney(l.value)}</div>
+                <div class="lc-source">${l.source}</div>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+let dragId = null;
+function kDragStart(e, el) { dragId = el.dataset.id; el.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; }
+function kDragEnd(el) { el.classList.remove('dragging'); }
+function kDragOver(e, col) { e.preventDefault(); col.classList.add('drag-over'); }
+function kDragLeave(col) { col.classList.remove('drag-over'); }
+async function kDrop(e, col) {
+  e.preventDefault(); col.classList.remove('drag-over');
+  const stage = col.dataset.stage;
+  if (!dragId || !stage) return;
+  await api('PATCH', `/leads/${dragId}/stage`, { stage });
+  toast(`Moved to ${stage}`);
+  await renderPipeline();
+}
+
+function filterKanban() {
+  const q = (document.getElementById('k-search')?.value||'').toLowerCase();
+  const src = document.getElementById('k-source')?.value||'';
+  const filtered = leads.filter(l =>
+    (!q || l.name.toLowerCase().includes(q) || (l.company||'').toLowerCase().includes(q) || (l.email||'').toLowerCase().includes(q)) &&
+    (!src || l.source === src)
+  );
+  renderKanban(filtered);
+}
+
+// ─── LEADS TABLE ─────────────────────────────────────────────────────
+async function renderLeads() {
+  leads = await api('GET','/leads');
+  document.getElementById('topbar-actions').innerHTML = `<button class="btn btn-primary" onclick="openLeadModal()">+ Add Lead</button>`;
+  const pg = document.getElementById('page-leads');
+  pg.innerHTML = `
+    <div class="search-bar">
+      <input class="search-input" id="lead-search" placeholder="🔍 Search by name, company, email…" oninput="filterLeads()" style="width:280px"/>
+      <select class="form-input" id="lead-stage-filter" onchange="filterLeads()" style="width:160px">
+        <option value="">All Stages</option>
+        ${STAGES.map(s=>`<option>${s}</option>`).join('')}
+      </select>
+      <select class="form-input" id="lead-source-filter" onchange="filterLeads()" style="width:160px">
+        <option value="">All Sources</option>
+        ${[...new Set(leads.map(l=>l.source))].map(s=>`<option>${s}</option>`).join('')}
+      </select>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th onclick="sortLeads('name')">Name ↕</th>
+            <th onclick="sortLeads('company')">Company ↕</th>
+            <th>Stage</th>
+            <th>Source</th>
+            <th onclick="sortLeads('value')">Value ↕</th>
+            <th onclick="sortLeads('updated_at')">Last Updated ↕</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="leads-tbody"></tbody>
+      </table>
+    </div>`;
+  filterLeads();
+}
+
+function filterLeads() {
+  const q = (document.getElementById('lead-search')?.value||'').toLowerCase();
+  const stf = document.getElementById('lead-stage-filter')?.value||'';
+  const srf = document.getElementById('lead-source-filter')?.value||'';
+  let data = [...leads];
+  if (q) data = data.filter(l => [l.name,l.company,l.email,l.phone].some(v=>(v||'').toLowerCase().includes(q)));
+  if (stf) data = data.filter(l => l.stage === stf);
+  if (srf) data = data.filter(l => l.source === srf);
+  data.sort((a,b) => {
+    let va = a[sortField]||'', vb = b[sortField]||'';
+    return typeof va === 'number' ? (va-vb)*sortDir : String(va).localeCompare(String(vb))*sortDir;
+  });
+  const tbody = document.getElementById('leads-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = data.length ? data.map(l => `
+    <tr onclick="openPanel('${l.id}')">
+      <td><div style="display:flex;align-items:center;gap:10px">
+        <div class="avatar" style="background:${STAGE_COLORS[l.stage]||'#6366f1'};width:28px;height:28px;font-size:11px">${initials(l.name)}</div>
+        <div><div style="font-weight:600">${l.name}</div><div style="font-size:12px;color:var(--muted)">${l.email||''}</div></div>
+      </div></td>
+      <td>${l.company||'—'}</td>
+      <td>${stageBadge(l.stage)}</td>
+      <td><span style="font-size:12px;color:var(--muted)">${l.source}</span></td>
+      <td style="font-weight:700;color:var(--primary)">${fmtMoney(l.value)}</td>
+      <td style="font-size:12px;color:var(--muted)">${fmtDate(l.updated_at)}</td>
+      <td onclick="event.stopPropagation()">
+        <div style="display:flex;gap:6px">
+          <button class="btn-icon" title="Send email" onclick="openEmailModal('${l.id}')">✉️</button>
+          <button class="btn-icon" title="Log activity" onclick="openActivityModal('${l.id}')">📞</button>
+          <button class="btn-icon" title="Edit" onclick="openLeadModal('${l.id}')">✏️</button>
+          <button class="btn-icon" title="Delete" onclick="deleteLead('${l.id}')">🗑️</button>
+        </div>
+      </td>
+    </tr>`).join('') :
+    `<tr><td colspan="7" class="empty"><div class="ei">👥</div><p>No leads found</p></td></tr>`;
+}
+
+function sortLeads(field) {
+  if (sortField === field) sortDir *= -1;
+  else { sortField = field; sortDir = field === 'updated_at' ? -1 : 1; }
+  filterLeads();
+}
+
+// ─── LEAD PANEL ───────────────────────────────────────────────────────
+async function openPanel(id) {
+  selectedLeadId = id;
+  const lead = await api('GET', `/leads/${id}`);
+  document.getElementById('lp-name').textContent = lead.name;
+  document.getElementById('lp-meta').innerHTML = `${lead.company||'No company'} · ${lead.email||'No email'} · ${lead.phone||'No phone'}`;
+  document.getElementById('lp-actions').innerHTML = `
+    <button class="btn btn-ghost btn-sm" onclick="openActivityModal('${id}')">📞 Log Activity</button>
+    <button class="btn btn-ghost btn-sm" onclick="openEmailModal('${id}')">✉️ Email</button>
+    <button class="btn btn-ghost btn-sm" onclick="openLeadModal('${id}')">✏️ Edit</button>
+    <select class="form-input" style="font-size:12px;padding:6px 10px;border-radius:8px;width:auto" onchange="quickStage('${id}',this.value)">
+      <option value="">Move stage…</option>
+      ${STAGES.map(s=>`<option ${s===lead.stage?'disabled':''} value="${s}">${s}</option>`).join('')}
+    </select>
+  `;
+  lpCurrentTab = 'info';
+  document.querySelectorAll('.lp-tab').forEach((t,i)=>t.classList.toggle('active',i===0));
+  await lpRenderInfo(lead);
+  document.getElementById('lead-panel').classList.add('open');
+  document.getElementById('panel-overlay').style.display = 'block';
+}
+
+async function quickStage(id, stage) {
+  if (!stage) return;
+  await api('PATCH', `/leads/${id}/stage`, { stage });
+  toast(`Moved to ${stage}`);
+  await openPanel(id);
+  if (currentView === 'pipeline') await renderPipeline();
+  if (currentView === 'leads') filterLeads();
+}
+
+function closePanel() {
+  document.getElementById('lead-panel').classList.remove('open');
+  document.getElementById('panel-overlay').style.display='none';
+  selectedLeadId = null;
+}
+
+async function lpTab(tab, el) {
+  lpCurrentTab = tab;
+  document.querySelectorAll('.lp-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  const lead = await api('GET', `/leads/${selectedLeadId}`);
+  if (tab === 'info')     await lpRenderInfo(lead);
+  if (tab === 'activity') await lpRenderActivity();
+  if (tab === 'emails')   await lpRenderEmails();
+}
+
+async function lpRenderInfo(lead) {
+  document.getElementById('lp-body').innerHTML = `
+    <div style="margin-bottom:18px">${stageBadge(lead.stage)} &nbsp; <span style="font-size:14px;font-weight:700;color:var(--primary)">${fmtMoney(lead.value)}</span></div>
+    ${infoRow('👤 Name', lead.name)}
+    ${infoRow('🏢 Company', lead.company)}
+    ${infoRow('📧 Email', lead.email ? `<a href="mailto:${lead.email}" style="color:var(--primary)">${lead.email}</a>` : '—')}
+    ${infoRow('📞 Phone', lead.phone ? `<a href="tel:${lead.phone}" style="color:var(--primary)">${lead.phone}</a>` : '—')}
+    ${infoRow('📍 Source', lead.source)}
+    ${infoRow('👤 Assigned', lead.assigned_to||'Unassigned')}
+    ${infoRow('📅 Created', fmtDate(lead.created_at))}
+    ${infoRow('🔄 Updated', fmtDate(lead.updated_at))}
+    ${lead.notes ? `<div style="margin-top:16px;padding:14px;background:#f8fafc;border-radius:10px;font-size:13px;color:var(--muted);line-height:1.6;white-space:pre-wrap">${lead.notes}</div>` : ''}
+  `;
+}
+
+function infoRow(label, val) {
+  return `<div style="display:flex;gap:12px;padding:8px 0;border-bottom:1px solid #f8fafc">
+    <div style="width:110px;font-size:12px;color:var(--faint);flex-shrink:0">${label}</div>
+    <div style="font-size:13.5px;font-weight:500">${val||'—'}</div>
+  </div>`;
+}
+
+async function lpRenderActivity() {
+  const acts = await api('GET', `/activities/${selectedLeadId}`);
+  const body = document.getElementById('lp-body');
+  body.innerHTML = `
+    <button class="btn btn-ghost btn-sm" onclick="openActivityModal('${selectedLeadId}')" style="margin-bottom:16px;width:100%">+ Log Activity</button>
+    <div class="timeline" id="timeline"></div>`;
+  const tl = document.getElementById('timeline');
+  if (!acts?.length) { tl.innerHTML='<div class="empty"><p>No activity yet</p></div>'; return; }
+  tl.innerHTML = acts.map(a => `
+    <div class="tl-item">
+      <div class="tl-icon" style="background:${TYPE_COLORS[a.type]||'#94a3b8'}22;color:${TYPE_COLORS[a.type]||'#94a3b8'}">${TYPE_ICONS[a.type]||'•'}</div>
+      <div class="tl-content">
+        <div class="tl-title">${a.title||a.type}</div>
+        ${a.content ? `<div class="tl-body">${a.content}</div>` : ''}
+        ${a.duration_min ? `<span class="pill" style="background:#f0f4ff;color:#6366f1;margin-top:4px">⏱ ${a.duration_min} min</span>` : ''}
+        <div class="tl-time">${fmtDateTime(a.created_at)}</div>
+      </div>
+    </div>`).join('');
+}
+
+async function lpRenderEmails() {
+  const [emails, tmpls] = await Promise.all([api('GET',`/emails/${selectedLeadId}`), api('GET','/templates')]);
+  const body = document.getElementById('lp-body');
+  body.innerHTML = `
+    <button class="btn btn-ghost btn-sm" onclick="openEmailModal('${selectedLeadId}')" style="margin-bottom:16px;width:100%">+ Send Email</button>
+    <div id="email-list"></div>`;
+  const statusColor = {sent:'#10b981',failed:'#ef4444',scheduled:'#f59e0b',pending:'#94a3b8'};
+  const el = document.getElementById('email-list');
+  if (!emails?.length) { el.innerHTML='<div class="empty"><p>No emails yet</p></div>'; return; }
+  el.innerHTML = emails.map(e => `
+    <div style="padding:12px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+        <div style="font-weight:600;font-size:13.5px">${e.subject}</div>
+        <span class="badge" style="background:${statusColor[e.status]||'#f1f5f9'}22;color:${statusColor[e.status]||'#94a3b8'}">${e.status}</span>
+      </div>
+      <div style="font-size:12px;color:var(--faint)">${e.sent_at ? 'Sent '+fmtDateTime(e.sent_at) : e.scheduled_at ? 'Scheduled '+fmtDateTime(e.scheduled_at) : fmtDateTime(e.created_at)}</div>
+      ${e.error_msg ? `<div style="font-size:12px;color:var(--red);margin-top:4px">⚠️ ${e.error_msg}</div>` : ''}
+    </div>`).join('');
+}
+
+// ─── EMAIL TEMPLATES ──────────────────────────────────────────────────
+async function renderTemplates() {
+  templates = await api('GET','/templates');
+  document.getElementById('topbar-actions').innerHTML = `<button class="btn btn-primary" onclick="openTmplModal()">+ New Template</button>`;
+  const pg = document.getElementById('page-templates');
+  const stages = [...new Set(templates.map(t=>t.stage_trigger).filter(Boolean))];
+  pg.innerHTML = `
+    <div style="margin-bottom:16px;background:#f0f7ff;border:1.5px solid #bfdbfe;border-radius:12px;padding:14px 18px;font-size:13.5px;color:#1d4ed8">
+      <strong>💡 Auto-send tip:</strong> Set a stage trigger and delay. When a lead reaches that stage, the email will be sent automatically after the specified delay. Use <code style="background:#dbeafe;padding:1px 6px;border-radius:4px">{{name}}</code>, <code style="background:#dbeafe;padding:1px 6px;border-radius:4px">{{company}}</code>, <code style="background:#dbeafe;padding:1px 6px;border-radius:4px">{{sender}}</code> for personalisation.
+    </div>
+    <div id="template-list"></div>`;
+  renderTemplateList();
+}
+
+function renderTemplateList() {
+  const el = document.getElementById('template-list');
+  if (!el) return;
+  if (!templates.length) { el.innerHTML='<div class="empty"><div class="ei">✉️</div><p>No templates yet. Create one to start automating emails.</p></div>'; return; }
+  el.innerHTML = templates.map(t => `
+    <div class="template-card">
+      <div class="tc-header">
+        <div>
+          <div class="tc-name">${t.name}</div>
+          <div class="tc-subject">Subject: ${t.subject}</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn-icon" onclick="openTmplModal('${t.id}')">✏️</button>
+          <button class="btn-icon" onclick="deleteTemplate('${t.id}')">🗑️</button>
+        </div>
+      </div>
+      <div class="tc-preview">${t.body.slice(0,200)}${t.body.length>200?'…':''}</div>
+      <div class="tc-meta">
+        ${t.stage_trigger ? `<span class="badge" style="background:${STAGE_BG[t.stage_trigger]||'#f1f5f9'};color:${STAGE_COLORS[t.stage_trigger]||'#64748b'}">🔄 Auto: ${t.stage_trigger}</span>` : '<span class="badge" style="background:#f1f5f9;color:#94a3b8">Manual only</span>'}
+        ${t.delay_hours > 0 ? `<span class="badge" style="background:#fef3c7;color:#b45309">⏱ +${t.delay_hours}h delay</span>` : ''}
+        <span class="badge" style="background:${t.active?'#dcfce7':'#fee2e2'};color:${t.active?'#15803d':'#b91c1c'}">${t.active?'Active':'Inactive'}</span>
+      </div>
+    </div>`).join('');
+}
+
+// ─── ANALYTICS ────────────────────────────────────────────────────────
+async function renderAnalytics() {
+  const [ov, pipeline, sources, trend, acts, conv] = await Promise.all([
+    api('GET','/analytics/overview'),
+    api('GET','/analytics/pipeline'),
+    api('GET','/analytics/sources'),
+    api('GET','/analytics/trend'),
+    api('GET','/analytics/activities'),
+    api('GET','/analytics/conversion'),
+  ]);
+  document.getElementById('topbar-actions').innerHTML='';
+  const pg = document.getElementById('page-analytics');
+  pg.innerHTML = `
+    <div class="grid-4" style="margin-bottom:20px">
+      <div class="stat" style="border-color:#6366f1"><div class="sl">Pipeline Value</div><div class="sv">${fmtMoney(ov.pipeline||0)}</div><div class="ss">Active opportunities</div></div>
+      <div class="stat" style="border-color:#10b981"><div class="sl">Revenue Won</div><div class="sv">${fmtMoney(ov.wonRevenue||0)}</div><div class="ss">${ov.wonCount||0} deals</div></div>
+      <div class="stat" style="border-color:#f59e0b"><div class="sl">Win Rate</div><div class="sv">${ov.winRate||0}%</div><div class="ss">vs ${ov.lost||0} lost</div></div>
+      <div class="stat" style="border-color:#3b82f6"><div class="sl">Emails Sent</div><div class="sv">${ov.emails||0}</div><div class="ss">${ov.scheduled||0} scheduled · ${ov.calls||0} calls</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3 style="font-size:14px;font-weight:700;margin-bottom:16px">Monthly Lead Trend</h3>
+        <div class="chart-wrap" style="height:200px"><canvas id="ach-trend"></canvas></div>
+      </div>
+      <div class="card">
+        <h3 style="font-size:14px;font-weight:700;margin-bottom:16px">Activity Breakdown</h3>
+        <div class="chart-wrap" style="height:200px"><canvas id="ach-acts"></canvas></div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3 style="font-size:14px;font-weight:700;margin-bottom:16px">Conversion Funnel</h3>
+        <div id="ach-funnel"></div>
+      </div>
+      <div class="card">
+        <h3 style="font-size:14px;font-weight:700;margin-bottom:16px">Revenue by Source</h3>
+        <div class="chart-wrap" style="height:220px"><canvas id="ach-sources"></canvas></div>
+      </div>
+    </div>`;
+
+  destroyChart('ach-trend');
+  charts['ach-trend'] = new Chart(document.getElementById('ach-trend'), {
+    type:'line',
+    data:{labels:trend.map(t=>t.month),datasets:[
+      {label:'New Leads',data:trend.map(t=>t.leads),borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,.1)',fill:true,tension:.4,pointRadius:4},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{grid:{color:'#f1f5f9'},ticks:{font:{size:10}}}}}
+  });
+
+  destroyChart('ach-acts');
+  charts['ach-acts'] = new Chart(document.getElementById('ach-acts'), {
+    type:'doughnut',
+    data:{labels:acts.map(a=>a.type),datasets:[{data:acts.map(a=>a.count),backgroundColor:acts.map(a=>TYPE_COLORS[a.type]||'#94a3b8'),borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{boxWidth:11,font:{size:11}}}}}
+  });
+
+  // Conversion funnel
+  const maxConv = Math.max(...(conv||[]).map(c=>c.count),1);
+  document.getElementById('ach-funnel').innerHTML = (conv||[]).map((c,i) => `
+    <div class="funnel-bar">
+      <div class="funnel-label">${c.stage}</div>
+      <div class="funnel-track"><div class="funnel-fill" style="width:${Math.max((c.count/maxConv)*100,0)}%;background:${STAGE_COLORS[c.stage]||'#94a3b8'}">${c.count>0?c.count:''}</div></div>
+      <div class="funnel-n">${c.count}</div>
+    </div>`).join('');
+
+  destroyChart('ach-sources');
+  charts['ach-sources'] = new Chart(document.getElementById('ach-sources'), {
+    type:'bar',
+    data:{labels:sources.map(s=>s.source),datasets:[{label:'Revenue ($)',data:sources.map(s=>s.value),backgroundColor:'rgba(99,102,241,.7)',borderRadius:6}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{grid:{color:'#f1f5f9'},ticks:{font:{size:10},callback:v=>fmtMoney(v)}}}}
+  });
+}
+
+// ─── SETTINGS ────────────────────────────────────────────────────────
+async function renderSettings() {
+  const s = await api('GET','/settings');
+  document.getElementById('topbar-actions').innerHTML='';
+  document.getElementById('page-settings').innerHTML = `
+    <div style="max-width:600px">
+      <div class="card" style="margin-bottom:16px">
+        <h3 style="font-weight:700;margin-bottom:18px">📧 Gmail Integration</h3>
+        <div style="background:#fef9c3;border:1.5px solid #fde68a;border-radius:10px;padding:14px 16px;margin-bottom:18px;font-size:13px;color:#78350f">
+          <strong>How to get a Gmail App Password:</strong><br>
+          1. Go to <a href="https://myaccount.google.com/security" target="_blank" style="color:#92400e">myaccount.google.com/security</a><br>
+          2. Enable 2-Step Verification<br>
+          3. Search for "App Passwords" → Create one named "CRM"<br>
+          4. Paste the 16-character password below (no spaces)
+        </div>
+        <div class="form-group"><label class="form-label">Your Gmail Address</label><input class="form-input" id="set-email" type="email" value="${s.email_user||''}" placeholder="you@gmail.com"/></div>
+        <div class="form-group"><label class="form-label">Gmail App Password</label><input class="form-input" id="set-pass" type="password" value="${s.email_pass||''}" placeholder="xxxx xxxx xxxx xxxx"/></div>
+        <div class="form-group"><label class="form-label">Sender Name (shown in emails)</label><input class="form-input" id="set-name" value="${s.sender_name||''}" placeholder="Your Name or Company"/></div>
+        <div style="display:flex;gap:10px;margin-top:6px">
+          <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+          <button class="btn btn-ghost" onclick="testEmail()">Send Test Email</button>
+        </div>
+        <div id="test-result" style="margin-top:10px;font-size:13px"></div>
+      </div>
+      <div class="card">
+        <h3 style="font-weight:700;margin-bottom:14px">🚀 Deploy to Web (Railway)</h3>
+        <div style="font-size:13.5px;color:var(--muted);line-height:1.7">
+          <p style="margin-bottom:10px">This CRM is running on Railway. To update or redeploy:</p>
+          <ol style="padding-left:18px">
+            <li>Push changes to your GitHub repo connected to Railway</li>
+            <li>Railway will auto-deploy on every push</li>
+            <li>Set Gmail credentials in Railway → Variables tab</li>
+          </ol>
+          <p style="margin-top:10px;color:var(--faint)">Environment variables: <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px">GMAIL_USER</code>, <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px">GMAIL_APP_PASSWORD</code>, <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px">SENDER_NAME</code></p>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function saveSettings() {
+  const r = await api('POST','/settings',{
+    email_user: document.getElementById('set-email').value,
+    email_pass: document.getElementById('set-pass').value,
+    sender_name: document.getElementById('set-name').value,
+  });
+  if (r?.ok) toast('Settings saved!'); else toast('Error saving', true);
+}
+
+async function testEmail() {
+  toast('Sending test email…');
+  const r = await api('POST','/settings/test-email');
+  const el = document.getElementById('test-result');
+  if (r?.ok) { el.style.color='#15803d'; el.textContent='✅ Test email sent successfully!'; toast('Test email sent!'); }
+  else { el.style.color='#b91c1c'; el.textContent='❌ ' + (r?.error||'Unknown error'); toast(r?.error||'Failed', true); }
+}
+
+// ─── LEAD MODAL ───────────────────────────────────────────────────────
+async function openLeadModal(id=null) {
+  editLeadId = id;
+  document.getElementById('lead-modal-title').textContent = id ? 'Edit Lead' : 'Add Lead';
+  if (id) {
+    const l = await api('GET', `/leads/${id}`);
+    document.getElementById('lm-name').value    = l.name||'';
+    document.getElementById('lm-company').value = l.company||'';
+    document.getElementById('lm-email').value   = l.email||'';
+    document.getElementById('lm-phone').value   = l.phone||'';
+    document.getElementById('lm-source').value  = l.source||'Manual';
+    document.getElementById('lm-stage').value   = l.stage||'New Lead';
+    document.getElementById('lm-value').value   = l.value||0;
+    document.getElementById('lm-assigned').value= l.assigned_to||'';
+    document.getElementById('lm-notes').value   = l.notes||'';
+  } else {
+    ['lm-name','lm-company','lm-email','lm-phone','lm-assigned','lm-notes'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('lm-value').value='0';
+    document.getElementById('lm-source').value='Manual';
+    document.getElementById('lm-stage').value='New Lead';
+  }
+  document.getElementById('lead-modal').classList.add('open');
+}
+
+function closeLeadModal() { document.getElementById('lead-modal').classList.remove('open'); editLeadId=null; }
+
+async function saveLead() {
+  const name = document.getElementById('lm-name').value.trim();
+  if (!name) { toast('Name is required', true); return; }
+  const body = {
+    name, company:document.getElementById('lm-company').value,
+    email:document.getElementById('lm-email').value, phone:document.getElementById('lm-phone').value,
+    source:document.getElementById('lm-source').value, stage:document.getElementById('lm-stage').value,
+    value:parseFloat(document.getElementById('lm-value').value)||0,
+    assigned_to:document.getElementById('lm-assigned').value, notes:document.getElementById('lm-notes').value,
+  };
+  if (editLeadId) await api('PUT', `/leads/${editLeadId}`, body);
+  else await api('POST', '/leads', body);
+  closeLeadModal();
+  toast(editLeadId ? 'Lead updated!' : 'Lead created!');
+  await nav(currentView);
+}
+
+async function deleteLead(id) {
+  if (!confirm('Delete this lead and all its data?')) return;
+  await api('DELETE', `/leads/${id}`);
+  closePanel();
+  toast('Lead deleted');
+  await nav(currentView);
+}
+
+// ─── ACTIVITY MODAL ───────────────────────────────────────────────────
+function openActivityModal(leadId) {
+  document.getElementById('am-lead-id').value = leadId;
+  ['am-title','am-content'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('am-type').value='call';
+  document.getElementById('am-duration').value='';
+  document.getElementById('am-date').value='';
+  document.getElementById('activity-modal').classList.add('open');
+}
+function closeActivityModal() { document.getElementById('activity-modal').classList.remove('open'); }
+
+async function saveActivity() {
+  const leadId = document.getElementById('am-lead-id').value;
+  const type   = document.getElementById('am-type').value;
+  const title  = document.getElementById('am-title').value.trim();
+  if (!title) { toast('Title required',true); return; }
+  await api('POST','/activities',{
+    lead_id:leadId, type, title,
+    content:document.getElementById('am-content').value,
+    duration_min:parseInt(document.getElementById('am-duration').value)||null,
+    scheduled_at:document.getElementById('am-date').value||null,
+  });
+  closeActivityModal();
+  toast('Activity logged!');
+  if (selectedLeadId === leadId) await lpRenderActivity();
+}
+
+// ─── EMAIL MODAL ──────────────────────────────────────────────────────
+async function openEmailModal(leadId) {
+  templates = await api('GET','/templates');
+  document.getElementById('em-lead-id').value = leadId;
+  ['em-subject','em-body','em-scheduled'].forEach(id=>document.getElementById(id).value='');
+  const sel = document.getElementById('em-template');
+  sel.innerHTML = '<option value="">— Choose template (optional) —</option>' +
+    templates.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  document.getElementById('email-modal').classList.add('open');
+}
+function closeEmailModal() { document.getElementById('email-modal').classList.remove('open'); }
+
+function applyEmailTemplate() {
+  const id = document.getElementById('em-template').value;
+  if (!id) return;
+  const t = templates.find(t=>t.id===id);
+  if (t) { document.getElementById('em-subject').value=t.subject; document.getElementById('em-body').value=t.body; }
+}
+
+async function sendEmailNow() {
+  const leadId   = document.getElementById('em-lead-id').value;
+  const subject  = document.getElementById('em-subject').value.trim();
+  const body     = document.getElementById('em-body').value.trim();
+  const sched    = document.getElementById('em-scheduled').value;
+  if (!subject || !body) { toast('Subject and body required', true); return; }
+  toast(sched ? 'Email scheduled…' : 'Sending email…');
+  const r = await api('POST','/emails/send',{ lead_id:leadId, subject, body, scheduled_at:sched||null });
+  closeEmailModal();
+  if (r?.ok) toast(sched ? 'Email scheduled!' : 'Email sent!');
+  else toast(r?.error || 'Send failed', true);
+  if (selectedLeadId === leadId && lpCurrentTab==='emails') await lpRenderEmails();
+}
+
+// ─── TEMPLATE MODAL ───────────────────────────────────────────────────
+async function openTmplModal(id=null) {
+  document.getElementById('tmpl-modal-title').textContent = id ? 'Edit Template' : 'New Template';
+  document.getElementById('tm-id').value = id||'';
+  if (id) {
+    const t = templates.find(t=>t.id===id) || await api('GET',`/templates`).then(ts=>ts.find(t=>t.id===id));
+    if (t) {
+      document.getElementById('tm-name').value    = t.name;
+      document.getElementById('tm-subject').value = t.subject;
+      document.getElementById('tm-body').value    = t.body;
+      document.getElementById('tm-trigger').value = t.stage_trigger||'';
+      document.getElementById('tm-delay').value   = t.delay_hours||0;
+    }
+  } else {
+    ['tm-name','tm-subject','tm-body'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('tm-trigger').value=''; document.getElementById('tm-delay').value='0';
+  }
+  document.getElementById('template-modal').classList.add('open');
+}
+function closeTmplModal() { document.getElementById('template-modal').classList.remove('open'); }
+
+async function saveTemplate() {
+  const id   = document.getElementById('tm-id').value;
+  const name = document.getElementById('tm-name').value.trim();
+  const subj = document.getElementById('tm-subject').value.trim();
+  const body = document.getElementById('tm-body').value.trim();
+  if (!name||!subj||!body) { toast('Name, subject and body required', true); return; }
+  const payload = { name, subject:subj, body, stage_trigger:document.getElementById('tm-trigger').value||null, delay_hours:parseInt(document.getElementById('tm-delay').value)||0 };
+  if (id) await api('PUT',`/templates/${id}`,payload);
+  else    await api('POST','/templates',payload);
+  closeTmplModal();
+  toast(id ? 'Template updated!' : 'Template created!');
+  templates = await api('GET','/templates');
+  renderTemplateList();
+}
+
+async function deleteTemplate(id) {
+  if (!confirm('Delete this template?')) return;
+  await api('DELETE',`/templates/${id}`);
+  templates = await api('GET','/templates');
+  renderTemplateList();
+  toast('Template deleted');
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => nav('dashboard'));
+</script>
+</body>
+</html>
